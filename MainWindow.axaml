@@ -1,0 +1,24 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:ShiftSchedulerDesktop.ViewModels"
+    xmlns:views="using:ShiftSchedulerDesktop.Views"
+    x:Class="ShiftSchedulerDesktop.MainWindow"
+    x:DataType="vm:MainWindowViewModel"
+    Title="Shift Scheduler"
+    Width="800"
+    Height="600"
+>
+
+    <TabControl>
+        <TabItem Header="Employees">
+            <views:EmployeesView DataContext="{Binding EmployeesVM}" />
+        </TabItem>
+        <TabItem Header="Stores">
+            <views:StoresView DataContext="{Binding StoresVM}" />
+        </TabItem>
+        <TabItem Header="Calendar">
+            <views:CalendarView DataContext="{Binding CalendarVM}" />
+        </TabItem>
+    </TabControl>
+</Window>

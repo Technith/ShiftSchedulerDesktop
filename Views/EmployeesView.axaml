@@ -1,0 +1,125 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:ShiftSchedulerDesktop.ViewModels"
+    x:Class="ShiftSchedulerDesktop.Views.EmployeesView"
+    x:DataType="vm:EmployeesViewModel"
+>
+
+    <DockPanel>
+        <StackPanel
+            DockPanel.Dock="Top"
+            Orientation="Horizontal"
+            Spacing="8"
+            Margin="8"
+        >
+            <Button Content="Add" Command="{Binding AddCommand}" />
+            <Button Content="Edit" Command="{Binding EditCommand}" />
+            <Button Content="Delete" Command="{Binding DeleteCommand}" />
+        </StackPanel>
+
+        <!-- Add Form -->
+        <Border
+            DockPanel.Dock="Top"
+            IsVisible="{Binding IsAddFormVisible}"
+            Background="#3d3d3d"
+            Padding="12"
+            Margin="8"
+            CornerRadius="4"
+        >
+            <StackPanel Spacing="8">
+                <TextBlock Text="Add New Employee" FontWeight="Bold" />
+
+                <TextBox
+                    Watermark="Employee Name"
+                    Text="{Binding NewEmployeeName}"
+                />
+
+                <TextBox
+                    Watermark="Employee Phone"
+                    Text="{Binding NewEmployeePhone}"
+                />
+
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                    <Button
+                        Content="Add"
+                        Command="{Binding CommitAddCommand}"
+                    />
+                    <Button
+                        Content="Cancel"
+                        Command="{Binding CancelAddCommand}"
+                    />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Edit Form -->
+        <Border
+            DockPanel.Dock="Top"
+            IsVisible="{Binding IsEditFormVisible}"
+            Background="#3d3d3d"
+            Padding="12"
+            Margin="8"
+            CornerRadius="4"
+        >
+            <StackPanel Spacing="8">
+                <TextBlock
+                    Text="Edit Employee"
+                    FontWeight="Bold"
+                />
+
+                <TextBox
+                    Watermark="Employee Name"
+                    Text="{Binding SelectedEmployee.Name}"
+                />
+
+                <TextBox
+                    Watermark="Employee Phone"
+                    Text="{Binding SelectedEmployee.Phone}"
+                />
+
+                <StackPanel
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    Margin="0,8,0,0"
+                >
+                    <Button
+                        Content="Save"
+                        Command="{Binding CommitEditCommand}"
+                    />
+                    <Button
+                        Content="Cancel"
+                        Command="{Binding CancelEditCommand}"
+                    />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <ListBox
+            ItemsSource="{Binding Employees}"
+            SelectedItem="{Binding SelectedEmployee}"
+        >
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border
+                        Background="#2d2d2d"
+                        Padding="8"
+                        Margin="2"
+                        CornerRadius="4"
+                    >
+                        <StackPanel>
+                            <TextBlock
+                                Text="{Binding Name}"
+                                FontWeight="Bold"
+                            />
+                            <TextBlock
+                                Text="{Binding Phone}"
+                                Foreground="Gray"
+                            />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</UserControl>

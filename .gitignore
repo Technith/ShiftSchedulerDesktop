@@ -1,0 +1,18 @@
+# Build outputs
+bin/
+obj/
+publish/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+
+# Debug files
+*.pdb
+
+# OS files
+.DS_Store
+Thumbs.db

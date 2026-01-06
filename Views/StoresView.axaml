@@ -1,0 +1,172 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:ShiftSchedulerDesktop.ViewModels"
+    x:Class="ShiftSchedulerDesktop.Views.StoresView"
+    x:DataType="vm:StoresViewModel"
+>
+
+    <DockPanel>
+        <StackPanel
+            DockPanel.Dock="Top"
+            Orientation="Horizontal"
+            Spacing="8"
+            Margin="8"
+        >
+            <Button Content="Add" Command="{Binding AddCommand}" />
+            <Button Content="Edit" Command="{Binding EditCommand}" />
+            <Button Content="Delete" Command="{Binding DeleteCommand}" />
+        </StackPanel>
+
+        <!-- Add Form -->
+        <Border
+            DockPanel.Dock="Top"
+            IsVisible="{Binding IsAddFormVisible}"
+            Background="#3d3d3d"
+            Padding="12"
+            Margin="8"
+            CornerRadius="4"
+        >
+            <StackPanel Spacing="8">
+                <TextBlock Text="Add New Store" FontWeight="Bold" />
+
+                <TextBox
+                    Watermark="Store Name"
+                    Text="{Binding NewStoreName}"
+                />
+
+                <TextBlock Text="Open Time" />
+                <ComboBox
+                    ItemsSource="{Binding TimeOptions}"
+                    SelectedItem="{Binding SelectedNewOpenTime}"
+                    MinWidth="120"
+                />
+
+                <TextBlock Text="Close Time" />
+                <ComboBox
+                    ItemsSource="{Binding TimeOptions}"
+                    SelectedItem="{Binding SelectedNewCloseTime}"
+                    MinWidth="120"
+                />
+
+                <!-- Employee Assignment -->
+                <TextBlock Text="Assign Employees:" FontWeight="SemiBold" Margin="0,8,0,4" />
+                <ItemsControl ItemsSource="{Binding AllEmployees}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:EmployeeSelection">
+                            <CheckBox
+                                Content="{Binding Employee.Name}"
+                                IsChecked="{Binding IsSelected}"
+                                Margin="0,2"
+                            />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                    <Button
+                        Content="Add"
+                        Command="{Binding CommitAddCommand}"
+                    />
+                    <Button
+                        Content="Cancel"
+                        Command="{Binding CancelAddCommand}"
+                    />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Edit Form -->
+        <Border
+            DockPanel.Dock="Top"
+            IsVisible="{Binding IsEditFormVisible}"
+            Background="#3d3d3d"
+            Padding="12"
+            Margin="8"
+            CornerRadius="4"
+        >
+            <StackPanel Spacing="8">
+                <TextBlock
+                    Text="Edit Store"
+                    FontWeight="Bold"
+                />
+
+                <TextBox
+                    Watermark="Store Name"
+                    Text="{Binding SelectedStore.Name}"
+                />
+
+                <TextBlock Text="Open Time" />
+                <ComboBox
+                    ItemsSource="{Binding TimeOptions}"
+                    SelectedItem="{Binding SelectedEditOpenTime}"
+                    MinWidth="120"
+                />
+
+                <TextBlock Text="Close Time" />
+                <ComboBox
+                    ItemsSource="{Binding TimeOptions}"
+                    SelectedItem="{Binding SelectedEditCloseTime}"
+                    MinWidth="120"
+                />
+
+                <!-- Employee Assignment -->
+                <TextBlock Text="Assign Employees:" FontWeight="SemiBold" Margin="0,8,0,4" />
+                <ItemsControl ItemsSource="{Binding AllEmployees}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:EmployeeSelection">
+                            <CheckBox
+                                Content="{Binding Employee.Name}"
+                                IsChecked="{Binding IsSelected}"
+                                Margin="0,2"
+                            />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    Margin="0,8,0,0"
+                >
+                    <Button
+                        Content="Save"
+                        Command="{Binding CommitEditCommand}"
+                    />
+                    <Button
+                        Content="Cancel"
+                        Command="{Binding CancelEditCommand}"
+                    />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <ListBox
+            ItemsSource="{Binding Stores}"
+            SelectedItem="{Binding SelectedStore}"
+        >
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border
+                        Background="#2d2d2d"
+                        Padding="8"
+                        Margin="2"
+                        CornerRadius="4"
+                    >
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" FontWeight="Bold" />
+                            <TextBlock Foreground="Gray">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0:hh\:mm tt} - {1:hh\:mm tt}">
+                                        <Binding Path="OpenTime" />
+                                        <Binding Path="CloseTime" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</UserControl>
