@@ -8,7 +8,7 @@ using Models;
 using ShiftSchedulerDesktop.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
-using QuestPDF.Infrastructure; // Test
+using QuestPDF.Infrastructure;
 namespace ShiftSchedulerDesktop.ViewModels;
 
 public class CalendarViewModel : ViewModelBase
