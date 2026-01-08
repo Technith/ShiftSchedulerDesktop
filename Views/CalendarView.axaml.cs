@@ -13,7 +13,7 @@ namespace ShiftSchedulerDesktop.Views;
 
 public partial class CalendarView : UserControl
 {
-    const double HourWidth = 70;
+    const double SlotWidth = 70;  // Width per 30-min slot
     const double ShiftH = 50;
     const double ShiftGap = 4;
     const double ShiftPad = 4;
@@ -25,7 +25,7 @@ public partial class CalendarView : UserControl
     ScheduleShift? _resizeShift;
     ScheduleDay? _resizeDay;
     double _resizeX0;
-    int _origStart, _origEnd;
+    double _origStart, _origEnd;
 
     public CalendarView()
     {
@@ -45,7 +45,7 @@ public partial class CalendarView : UserControl
         var rows = this.FindControl<ItemsControl>("DayRowsControl");
         if (rows == null) return;
 
-        int open = VM.SelectedStore?.OpenTime?.Hour ?? 9;
+        double open = VM.SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
 
         foreach (var ctrl in rows.GetVisualDescendants().OfType<ItemsControl>())
         {
@@ -66,12 +66,13 @@ public partial class CalendarView : UserControl
             foreach (var (pres, shift) in items)
             {
                 int row = rowMap.GetValueOrDefault(shift, 0);
-                double left = (shift.StartHour - open) * HourWidth;
+                // Convert hour difference to 30-min slots for positioning
+                double left = (shift.StartHour - open) * 2 * SlotWidth;
                 double top = ShiftPad + row * (ShiftH + ShiftGap);
 
                 Canvas.SetLeft(pres, left);
                 Canvas.SetTop(pres, top);
-                pres.Width = Math.Max((shift.EndHour - shift.StartHour) * HourWidth - 4, 50);
+                pres.Width = Math.Max((shift.EndHour - shift.StartHour) * 2 * SlotWidth - 4, 50);
             }
 
             double h = ShiftPad + maxRow * (ShiftH + ShiftGap) + ShiftPad;
@@ -85,7 +86,7 @@ public partial class CalendarView : UserControl
         if (shifts.Count == 0) return result;
 
         var sorted = shifts.OrderBy(s => s.StartHour).ThenBy(s => s.EndHour);
-        var ends = new List<int>();
+        var ends = new List<double>();
 
         foreach (var s in sorted)
         {
@@ -154,14 +155,15 @@ public partial class CalendarView : UserControl
         if (!_resizing || _resizeShift == null || VM == null) return;
 
         double dx = e.GetPosition(this).X - _resizeX0;
-        int dh = (int)Math.Round(dx / HourWidth);
-        int open = VM.SelectedStore?.OpenTime?.Hour ?? 9;
-        int close = VM.SelectedStore?.CloseTime?.Hour ?? 17;
+        // Each slot is 30 minutes (0.5 hours)
+        double dh = Math.Round(dx / SlotWidth) * 0.5;
+        double open = VM.SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
+        double close = VM.SelectedStore?.CloseTime?.TimeOfDay.TotalHours ?? 17;
 
         if (_resizeLeft)
-            _resizeShift.StartHour = Math.Clamp(_origStart + dh, open, _origEnd - 1);
+            _resizeShift.StartHour = Math.Clamp(_origStart + dh, open, _origEnd - 0.5);
         else
-            _resizeShift.EndHour = Math.Clamp(_origEnd + dh, _origStart + 1, close);
+            _resizeShift.EndHour = Math.Clamp(_origEnd + dh, _origStart + 0.5, close);
 
         PositionAllShifts();
     }
@@ -199,7 +201,7 @@ public partial class CalendarView : UserControl
         var day = FindDayContext(e.Source as Control);
         if (day == null) { VM.CancelDrag(); return; }
 
-        int hour = GetDropHour(e);
+        double hour = GetDropHour(e);
 
         if (e.Data.Contains("Employee") && VM.DraggedEmployee != null)
         {
@@ -222,11 +224,11 @@ public partial class CalendarView : UserControl
         return false;
     }
 
-    int GetDropHour(DragEventArgs e)
+    double GetDropHour(DragEventArgs e)
     {
         if (VM == null) return 9;
-        int open = VM.SelectedStore?.OpenTime?.Hour ?? 9;
-        int close = VM.SelectedStore?.CloseTime?.Hour ?? 17;
+        double open = VM.SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
+        double close = VM.SelectedStore?.CloseTime?.TimeOfDay.TotalHours ?? 17;
 
         var el = e.Source as Control;
         Canvas? cv = el as Canvas;
@@ -237,8 +239,10 @@ public partial class CalendarView : UserControl
         }
         if (cv == null) return open;
 
-        int off = (int)(e.GetPosition(cv).X / HourWidth);
-        return Math.Clamp(open + off, open, close - 1);
+        // Each slot is 30 minutes (0.5 hours)
+        double slots = e.GetPosition(cv).X / SlotWidth;
+        double hour = open + Math.Floor(slots) * 0.5;
+        return Math.Clamp(hour, open, close - 0.5);
     }
 
     ScheduleDay? FindDayContext(Control? el)

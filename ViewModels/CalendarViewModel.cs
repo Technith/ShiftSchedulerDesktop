@@ -6,6 +6,9 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Models;
 using ShiftSchedulerDesktop.Models;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace ShiftSchedulerDesktop.ViewModels;
 
@@ -62,12 +65,14 @@ public class CalendarViewModel : ViewModelBase
     }
 
     public RelayCommand SaveScheduleCommand { get; }
+    public RelayCommand ExportPdfCommand { get; }
 
     public CalendarViewModel(StoresViewModel storesVM)
     {
         _storesVM = storesVM;
 
         SaveScheduleCommand = new RelayCommand(SaveSchedule, () => SelectedStore != null);
+        ExportPdfCommand = new RelayCommand(ExportPdf, () => SelectedStore != null);
         _storesVM.PropertyChanged += OnStoresVMPropertyChanged;
         _storesVM.Stores.CollectionChanged += OnStoresCollectionChanged;
 
@@ -98,10 +103,10 @@ public class CalendarViewModel : ViewModelBase
         HourSlots.Clear();
         Days.Clear();
 
-        int open = SelectedStore?.OpenTime?.Hour ?? 9;
-        int close = SelectedStore?.CloseTime?.Hour ?? 17;
+        double open = SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
+        double close = SelectedStore?.CloseTime?.TimeOfDay.TotalHours ?? 17;
 
-        for (int h = open; h <= close; h++)
+        for (double h = open; h <= close; h += 0.5)
             HourSlots.Add(FormatHour(h));
 
         var shifts = LoadShiftsFromDb();
@@ -115,8 +120,8 @@ public class CalendarViewModel : ViewModelBase
                 {
                     EmployeeName = s.AssignedEmployee?.Name ?? "Unassigned",
                     EmployeeId = s.AssignedEmployee?.Id ?? 0,
-                    StartHour = s.StartTime.Hour,
-                    EndHour = s.EndTime.Hour,
+                    StartHour = s.StartTime.Hour + s.StartTime.Minute / 60.0,
+                    EndHour = s.EndTime.Hour + s.EndTime.Minute / 60.0,
                     Color = GetEmployeeColor(s.AssignedEmployee)
                 });
             }
@@ -151,13 +156,15 @@ public class CalendarViewModel : ViewModelBase
 
     private static readonly string[] _shiftColors = { "#4A90D9", "#E67E22", "#27AE60", "#9B59B6", "#E74C3C", "#1ABC9C", "#F39C12" };
 
-    private string FormatHour(int h) => h switch
+    private string FormatHour(double h)
     {
-        0 => "12 AM",
-        12 => "12 PM",
-        < 12 => $"{h} AM",
-        _ => $"{h - 12} PM"
-    };
+        int hour = (int)h;
+        int min = (int)((h - hour) * 60);
+        string suffix = hour >= 12 ? "PM" : "AM";
+        int displayHour = hour % 12;
+        if (displayHour == 0) displayHour = 12;
+        return min == 0 ? $"{displayHour} {suffix}" : $"{displayHour}:{min:D2} {suffix}";
+    }
 
     private string GetDayName(DayOfWeek d) => d.ToString()[..3];
 
@@ -178,11 +185,11 @@ public class CalendarViewModel : ViewModelBase
         DraggedEmployee = null;
     }
 
-    public void DropOnSchedule(ScheduleDay target, int hour)
+    public void DropOnSchedule(ScheduleDay target, double hour)
     {
         if (DraggedEmployee != null)
         {
-            int close = SelectedStore?.CloseTime?.Hour ?? 17;
+            double close = SelectedStore?.CloseTime?.TimeOfDay.TotalHours ?? 17;
             target.Shifts.Add(new ScheduleShift
             {
                 EmployeeName = DraggedEmployee.Name,
@@ -195,7 +202,7 @@ public class CalendarViewModel : ViewModelBase
         else if (DraggedShift != null && DragSource != null && DragSource != target)
         {
             DragSource.Shifts.Remove(DraggedShift);
-            int len = DraggedShift.EndHour - DraggedShift.StartHour;
+            double len = DraggedShift.EndHour - DraggedShift.StartHour;
             DraggedShift.StartHour = hour;
             DraggedShift.EndHour = hour + len;
             target.Shifts.Add(DraggedShift);
@@ -216,12 +223,12 @@ public class CalendarViewModel : ViewModelBase
         foreach (var d in Days) d.IsDragOver = d == day;
     }
 
-    public void ResizeShift(ScheduleShift shift, int start, int end)
+    public void ResizeShift(ScheduleShift shift, double start, double end)
     {
-        int open = SelectedStore?.OpenTime?.Hour ?? 9;
-        int close = SelectedStore?.CloseTime?.Hour ?? 17;
-        shift.StartHour = Math.Clamp(start, open, close - 1);
-        shift.EndHour = Math.Clamp(end, shift.StartHour + 1, close);
+        double open = SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
+        double close = SelectedStore?.CloseTime?.TimeOfDay.TotalHours ?? 17;
+        shift.StartHour = Math.Clamp(start, open, close - 0.5);
+        shift.EndHour = Math.Clamp(end, shift.StartHour + 0.5, close);
     }
 
     public void DeleteShift(ScheduleDay day, ScheduleShift shift) => day.Shifts.Remove(shift);
@@ -254,8 +261,8 @@ public class CalendarViewModel : ViewModelBase
             {
                 store.Schedule.Add(new Shift
                 {
-                    StartTime = date.AddHours(ss.StartHour),
-                    EndTime = date.AddHours(ss.EndHour),
+                    StartTime = date.Add(TimeSpan.FromHours(ss.StartHour)),
+                    EndTime = date.Add(TimeSpan.FromHours(ss.EndHour)),
                     AssignedEmployee = ctx.EmployeeTable?.Find(ss.EmployeeId)
                 });
             }
@@ -263,6 +270,140 @@ public class CalendarViewModel : ViewModelBase
 
         ctx.SaveChanges();
         SaveStatusMessage = $"Saved {DateTime.Now:h:mm tt}";
+    }
+
+    private void ExportPdf()
+    {
+        if (SelectedStore == null) return;
+
+        QuestPDF.Settings.License = LicenseType.Community;
+
+        var storeName = SelectedStore.Name;
+        double openHour = SelectedStore.OpenTime?.TimeOfDay.TotalHours ?? 9;
+        double closeHour = SelectedStore.CloseTime?.TimeOfDay.TotalHours ?? 17;
+        int totalHours = (int)(closeHour - openHour);
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.Letter.Landscape());
+                page.Margin(20);
+                page.DefaultTextStyle(x => x.FontSize(9));
+
+                page.Header().Column(col =>
+                {
+                    col.Item().Text($"{storeName} - Weekly Schedule").FontSize(18).Bold().AlignCenter();
+                    col.Item().PaddingBottom(8);
+                });
+
+                page.Content().Table(table =>
+                {
+                    table.ColumnsDefinition(cols =>
+                    {
+                        cols.ConstantColumn(45); // Day column
+                        for (int i = 0; i < totalHours; i++)
+                            cols.RelativeColumn(); // Hour columns
+                    });
+
+                    // Header row with hours
+                    table.Header(header =>
+                    {
+                        header.Cell().Background("#2d2d2d").Border(0.5f).BorderColor("#3d3d3d").Padding(4)
+                            .AlignCenter().AlignMiddle().Text("").FontColor("#ffffff");
+
+                        for (int h = 0; h < totalHours; h++)
+                        {
+                            int hour = (int)openHour + h;
+                            string suffix = hour >= 12 ? "PM" : "AM";
+                            int displayHour = hour % 12;
+                            if (displayHour == 0) displayHour = 12;
+                            string label = $"{displayHour}{suffix}";
+
+                            header.Cell().Background("#2d2d2d").Border(0.5f).BorderColor("#3d3d3d").Padding(4)
+                                .AlignCenter().AlignMiddle().Text(label).FontColor("#b0b0b0").FontSize(8);
+                        }
+                    });
+
+                    // Day rows
+                    for (int dayIdx = 0; dayIdx < Days.Count; dayIdx++)
+                    {
+                        var day = Days[dayIdx];
+                        var rowBg = dayIdx % 2 == 0 ? "#f8f8f8" : "#ffffff";
+
+                        // Day label cell
+                        table.Cell().RowSpan(1).Background("#2d2d2d").Border(0.5f).BorderColor("#3d3d3d")
+                            .Padding(4).AlignCenter().AlignMiddle()
+                            .Text(day.DayName).FontColor("#b0b0b0").Bold().FontSize(10);
+
+                        // Create a single merged cell for the timeline
+                        table.Cell().ColumnSpan((uint)totalHours).Background(rowBg).Border(0.5f).BorderColor("#e0e0e0")
+                            .MinHeight(50).Layers(layers =>
+                            {
+                                // Background grid lines for each hour
+                                layers.Layer().Row(gridRow =>
+                                {
+                                    for (int h = 0; h < totalHours; h++)
+                                    {
+                                        gridRow.RelativeItem().BorderRight(0.5f).BorderColor("#e0e0e0");
+                                    }
+                                });
+
+                                // Shift blocks layer
+                                layers.PrimaryLayer().Padding(2).Column(shiftCol =>
+                                {
+                                    foreach (var shift in day.Shifts.OrderBy(s => s.StartHour))
+                                    {
+                                        // Calculate position as percentage
+                                        double startPct = (shift.StartHour - openHour) / totalHours;
+                                        double widthPct = (shift.EndHour - shift.StartHour) / totalHours;
+
+                                        shiftCol.Item().PaddingVertical(1).Row(row =>
+                                        {
+                                            // Spacer for left offset
+                                            if (startPct > 0)
+                                                row.RelativeItem((float)(startPct * 100)).Text("");
+
+                                            // Shift block
+                                            row.RelativeItem((float)(widthPct * 100))
+                                                .Background(shift.Color).Padding(3)
+                                                .Column(blockCol =>
+                                                {
+                                                    blockCol.Item().Text(shift.EmployeeName)
+                                                        .FontColor("#ffffff").Bold().FontSize(8);
+                                                    blockCol.Item().Text(shift.TimeDisplay)
+                                                        .FontColor("#ffffff").FontSize(7);
+                                                });
+
+                                            // Spacer for right
+                                            double endPct = 1 - startPct - widthPct;
+                                            if (endPct > 0)
+                                                row.RelativeItem((float)(endPct * 100)).Text("");
+                                        });
+                                    }
+
+                                    if (day.Shifts.Count == 0)
+                                    {
+                                        shiftCol.Item().AlignCenter().AlignMiddle().PaddingTop(15)
+                                            .Text("No shifts").FontColor("#aaaaaa").Italic().FontSize(8);
+                                    }
+                                });
+                            });
+                    }
+                });
+
+                page.Footer().AlignCenter()
+                    .Text($"Generated {DateTime.Now:g}").FontSize(8).FontColor("#888888");
+            });
+        });
+
+        var fileName = $"{storeName}_Schedule.pdf";
+        var filePath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+            fileName);
+
+        document.GeneratePdf(filePath);
+        SaveStatusMessage = $"Exported to Desktop";
     }
 }
 
@@ -283,19 +424,28 @@ public class ScheduleDay : INotifyPropertyChanged
 public class ScheduleShift : INotifyPropertyChanged
 {
     private string _empName = "";
-    private int _empId, _start, _end;
+    private int _empId;
+    private double _start, _end;
     private string _color = "#4A90D9";
 
     public string EmployeeName { get => _empName; set { _empName = value; Notify(); } }
     public int EmployeeId { get => _empId; set { _empId = value; Notify(); } }
-    public int StartHour { get => _start; set { _start = value; Notify(); Notify(nameof(TimeDisplay)); } }
-    public int EndHour { get => _end; set { _end = value; Notify(); Notify(nameof(TimeDisplay)); } }
+    public double StartHour { get => _start; set { _start = value; Notify(); Notify(nameof(TimeDisplay)); } }
+    public double EndHour { get => _end; set { _end = value; Notify(); Notify(nameof(TimeDisplay)); } }
     public string Color { get => _color; set { _color = value; Notify(); } }
 
     public string TimeDisplay => $"{Fmt(StartHour)} - {Fmt(EndHour)}";
-    public int Duration => EndHour - StartHour;
+    public double Duration => EndHour - StartHour;
 
-    static string Fmt(int h) => h switch { 0 => "12 AM", 12 => "12 PM", < 12 => $"{h} AM", _ => $"{h - 12} PM" };
+    static string Fmt(double h)
+    {
+        int hour = (int)h;
+        int min = (int)((h - hour) * 60);
+        string suffix = hour >= 12 ? "PM" : "AM";
+        int displayHour = hour % 12;
+        if (displayHour == 0) displayHour = 12;
+        return min == 0 ? $"{displayHour} {suffix}" : $"{displayHour}:{min:D2} {suffix}";
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
     void Notify([System.Runtime.CompilerServices.CallerMemberName] string? n = null) =>

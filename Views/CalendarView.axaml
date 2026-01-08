@@ -115,6 +115,15 @@
                         Padding="16,8"
                         CornerRadius="4"
                     />
+                    <Button
+                        Command="{Binding ExportPdfCommand}"
+                        Content="Export PDF"
+                        Background="#3498DB"
+                        Foreground="White"
+                        FontWeight="SemiBold"
+                        Padding="16,8"
+                        CornerRadius="4"
+                    />
                 </StackPanel>
             </Grid>
         </Border>
@@ -266,13 +275,13 @@
                                                             Text="{Binding EmployeeName}"
                                                             Foreground="White"
                                                             FontWeight="SemiBold"
-                                                            FontSize="12"
+                                                            FontSize="16"
                                                         />
                                                         <TextBlock
                                                             Text="{Binding TimeDisplay}"
                                                             Foreground="White"
                                                             Opacity="0.85"
-                                                            FontSize="10"
+                                                            FontSize="14"
                                                         />
                                                     </StackPanel>
                                                 </Border>
