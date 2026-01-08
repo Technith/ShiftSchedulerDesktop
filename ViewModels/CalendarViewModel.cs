@@ -27,6 +27,7 @@ public class CalendarViewModel : ViewModelBase
             {
                 GenerateSchedule();
                 LoadStoreEmployees();
+                LoadAvailability();
             }
         }
     }
@@ -41,6 +42,7 @@ public class CalendarViewModel : ViewModelBase
     public ObservableCollection<Employee> StoreEmployees { get; } = new();
     public ObservableCollection<string> HourSlots { get; } = new();
     public ObservableCollection<ScheduleDay> Days { get; } = new();
+    public ObservableCollection<ScheduleDay> AvailabilityDays { get; } = new();
 
     private ScheduleShift? _draggedShift;
     private ScheduleDay? _dragSource;
@@ -154,6 +156,48 @@ public class CalendarViewModel : ViewModelBase
                 StoreEmployees.Add(e);
     }
 
+    private void LoadAvailability()
+    {
+        AvailabilityDays.Clear();
+        if (SelectedStore == null) return;
+
+        using var ctx = new DatabaseContext();
+        var availabilities = ctx.AvailabilityTable?
+            .Where(a => a.StoreId == SelectedStore.Id)
+            .Include(a => a.Employee)
+            .ToList() ?? new();
+
+        var dayNames = new[] { "Mon", "Tue", "Wed", "Thu", "Fri" };
+        var dayMap = new Dictionary<string, DayOfWeek>
+        {
+            { "Mon", DayOfWeek.Monday },
+            { "Tue", DayOfWeek.Tuesday },
+            { "Wed", DayOfWeek.Wednesday },
+            { "Thu", DayOfWeek.Thursday },
+            { "Fri", DayOfWeek.Friday }
+        };
+
+        foreach (var dayName in dayNames)
+        {
+            var day = new ScheduleDay { DayName = dayName };
+            var dow = dayMap[dayName];
+
+            foreach (var avail in availabilities.Where(a => a.DayOfWeek == dow && a.StartTime.HasValue && a.EndTime.HasValue))
+            {
+                day.Shifts.Add(new ScheduleShift
+                {
+                    EmployeeName = avail.Employee?.Name ?? "Unknown",
+                    EmployeeId = avail.Employee?.Id ?? 0,
+                    StartHour = avail.StartTime!.Value.TotalHours,
+                    EndHour = avail.EndTime!.Value.TotalHours,
+                    Color = GetEmployeeColor(avail.Employee)
+                });
+            }
+
+            AvailabilityDays.Add(day);
+        }
+    }
+
     private static readonly string[] _shiftColors = { "#4A90D9", "#E67E22", "#27AE60", "#9B59B6", "#E74C3C", "#1ABC9C", "#F39C12" };
 
     private string FormatHour(double h)
@@ -264,6 +308,38 @@ public class CalendarViewModel : ViewModelBase
                     StartTime = date.Add(TimeSpan.FromHours(ss.StartHour)),
                     EndTime = date.Add(TimeSpan.FromHours(ss.EndHour)),
                     AssignedEmployee = ctx.EmployeeTable?.Find(ss.EmployeeId)
+                });
+            }
+        }
+
+        // Save availability
+        var existingAvailability = ctx.AvailabilityTable?
+            .Where(a => a.StoreId == SelectedStore.Id)
+            .ToList();
+        if (existingAvailability != null)
+            ctx.AvailabilityTable?.RemoveRange(existingAvailability);
+
+        var availDayMap = new Dictionary<string, DayOfWeek>
+        {
+            { "Mon", DayOfWeek.Monday },
+            { "Tue", DayOfWeek.Tuesday },
+            { "Wed", DayOfWeek.Wednesday },
+            { "Thu", DayOfWeek.Thursday },
+            { "Fri", DayOfWeek.Friday }
+        };
+
+        foreach (var day in AvailabilityDays)
+        {
+            var dow = availDayMap[day.DayName];
+            foreach (var shift in day.Shifts)
+            {
+                ctx.AvailabilityTable?.Add(new EmployeeAvailability
+                {
+                    EmployeeId = shift.EmployeeId,
+                    StoreId = SelectedStore.Id,
+                    DayOfWeek = dow,
+                    StartTime = TimeSpan.FromHours(shift.StartHour),
+                    EndTime = TimeSpan.FromHours(shift.EndHour)
                 });
             }
         }
@@ -451,3 +527,4 @@ public class ScheduleShift : INotifyPropertyChanged
     void Notify([System.Runtime.CompilerServices.CallerMemberName] string? n = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
 }
+

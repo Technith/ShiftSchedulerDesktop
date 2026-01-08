@@ -63,7 +63,7 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,Auto,*" Background="#1a1a1a">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="#1a1a1a">
 
         <!-- Header with Store Selector -->
         <Border
@@ -295,5 +295,147 @@
                 </ItemsControl>
             </Grid>
         </ScrollViewer>
+
+        <!-- Employee Availability Section -->
+        <Grid Grid.Row="3" RowDefinitions="Auto,*">
+            <!-- Availability Header -->
+            <Border
+                Grid.Row="0"
+                Background="#252525"
+                Padding="12"
+                BorderBrush="#3d3d3d"
+                BorderThickness="0,1,0,1"
+            >
+                <TextBlock
+                    Text="Employee Availability"
+                    FontWeight="SemiBold"
+                    FontSize="16"
+                    Foreground="#e0e0e0"
+                />
+            </Border>
+
+            <!-- Availability Grid -->
+            <ScrollViewer
+                Grid.Row="1"
+                HorizontalScrollBarVisibility="Auto"
+                VerticalScrollBarVisibility="Auto"
+            >
+                <Grid Name="AvailabilityGrid">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" /> <!-- Hour headers -->
+                        <RowDefinition Height="*" /> <!-- Day rows -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Hour Headers Row -->
+                    <Border Grid.Row="0" Background="#2d2d2d">
+                        <StackPanel Orientation="Horizontal">
+                            <!-- Empty corner cell -->
+                            <Border Classes="day-label">
+                                <TextBlock Text="" Width="40" />
+                            </Border>
+                            <!-- Hour column headers -->
+                            <ItemsControl ItemsSource="{Binding HourSlots}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="hour-header">
+                                            <TextBlock
+                                                Text="{Binding}"
+                                                FontWeight="Medium"
+                                                Foreground="#b0b0b0"
+                                                HorizontalAlignment="Center"
+                                            />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Day Rows -->
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding AvailabilityDays}" Name="AvailabilityDayRowsControl">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:ScheduleDay">
+                                <Border
+                                    Classes="day-row"
+                                    Classes.drag-over="{Binding IsDragOver}"
+                                    DragDrop.AllowDrop="True"
+                                >
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Day Label -->
+                                        <Border Grid.Column="0" Classes="day-label">
+                                            <TextBlock
+                                                Text="{Binding DayName}"
+                                                FontWeight="SemiBold"
+                                                Foreground="#b0b0b0"
+                                                VerticalAlignment="Center"
+                                            />
+                                        </Border>
+
+                                        <!-- Time Grid with Availability Blocks -->
+                                        <ItemsControl
+                                            Grid.Column="1"
+                                            ItemsSource="{Binding Shifts}"
+                                            MinHeight="60"
+                                            DragDrop.AllowDrop="True"
+                                            Background="Transparent"
+                                        >
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <Canvas />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="vm:ScheduleShift">
+                                                    <Border
+                                                        Classes="shift-block"
+                                                        Background="{Binding Color}"
+                                                        Height="50"
+                                                        Tag="{Binding}"
+                                                    >
+                                                        <StackPanel
+                                                            Orientation="Vertical"
+                                                            VerticalAlignment="Center"
+                                                            Margin="8,4"
+                                                        >
+                                                            <TextBlock
+                                                                Text="{Binding EmployeeName}"
+                                                                Foreground="White"
+                                                                FontWeight="SemiBold"
+                                                                FontSize="16"
+                                                            />
+                                                            <TextBlock
+                                                                Text="{Binding TimeDisplay}"
+                                                                Foreground="White"
+                                                                Opacity="0.85"
+                                                                FontSize="14"
+                                                            />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </UserControl>

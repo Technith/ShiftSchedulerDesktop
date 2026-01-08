@@ -42,41 +42,47 @@ public partial class CalendarView : UserControl
     {
         if (VM == null) return;
 
-        var rows = this.FindControl<ItemsControl>("DayRowsControl");
-        if (rows == null) return;
-
         double open = VM.SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
 
-        foreach (var ctrl in rows.GetVisualDescendants().OfType<ItemsControl>())
+        // Position shifts in both the schedule and availability calendars
+        var controlNames = new[] { "DayRowsControl", "AvailabilityDayRowsControl" };
+
+        foreach (var controlName in controlNames)
         {
-            if (ctrl == rows || ctrl.DataContext is not ScheduleDay day) continue;
+            var rows = this.FindControl<ItemsControl>(controlName);
+            if (rows == null) continue;
 
-            var canvas = ctrl.GetVisualDescendants().OfType<Canvas>().FirstOrDefault();
-            if (canvas == null) continue;
-
-            var items = canvas.Children
-                .OfType<ContentPresenter>()
-                .Where(p => p.DataContext is ScheduleShift)
-                .Select(p => (p, (ScheduleShift)p.DataContext!))
-                .ToList();
-
-            var rowMap = CalcRows(items.Select(x => x.Item2).ToList());
-            int maxRow = rowMap.Count > 0 ? rowMap.Values.Max() + 1 : 1;
-
-            foreach (var (pres, shift) in items)
+            foreach (var ctrl in rows.GetVisualDescendants().OfType<ItemsControl>())
             {
-                int row = rowMap.GetValueOrDefault(shift, 0);
-                // Convert hour difference to 30-min slots for positioning
-                double left = (shift.StartHour - open) * 2 * SlotWidth;
-                double top = ShiftPad + row * (ShiftH + ShiftGap);
+                if (ctrl == rows || ctrl.DataContext is not ScheduleDay day) continue;
 
-                Canvas.SetLeft(pres, left);
-                Canvas.SetTop(pres, top);
-                pres.Width = Math.Max((shift.EndHour - shift.StartHour) * 2 * SlotWidth - 4, 50);
+                var canvas = ctrl.GetVisualDescendants().OfType<Canvas>().FirstOrDefault();
+                if (canvas == null) continue;
+
+                var items = canvas.Children
+                    .OfType<ContentPresenter>()
+                    .Where(p => p.DataContext is ScheduleShift)
+                    .Select(p => (p, (ScheduleShift)p.DataContext!))
+                    .ToList();
+
+                var rowMap = CalcRows(items.Select(x => x.Item2).ToList());
+                int maxRow = rowMap.Count > 0 ? rowMap.Values.Max() + 1 : 1;
+
+                foreach (var (pres, shift) in items)
+                {
+                    int row = rowMap.GetValueOrDefault(shift, 0);
+                    // Convert hour difference to 30-min slots for positioning
+                    double left = (shift.StartHour - open) * 2 * SlotWidth;
+                    double top = ShiftPad + row * (ShiftH + ShiftGap);
+
+                    Canvas.SetLeft(pres, left);
+                    Canvas.SetTop(pres, top);
+                    pres.Width = Math.Max((shift.EndHour - shift.StartHour) * 2 * SlotWidth - 4, 50);
+                }
+
+                double h = ShiftPad + maxRow * (ShiftH + ShiftGap) + ShiftPad;
+                canvas.MinHeight = ctrl.MinHeight = Math.Max(60, h);
             }
-
-            double h = ShiftPad + maxRow * (ShiftH + ShiftGap) + ShiftPad;
-            canvas.MinHeight = ctrl.MinHeight = Math.Max(60, h);
         }
     }
 
@@ -161,9 +167,17 @@ public partial class CalendarView : UserControl
         double close = VM.SelectedStore?.CloseTime?.TimeOfDay.TotalHours ?? 17;
 
         if (_resizeLeft)
-            _resizeShift.StartHour = Math.Clamp(_origStart + dh, open, _origEnd - 0.5);
+        {
+            double minStart = open;
+            double maxStart = Math.Max(minStart, _origEnd - 0.5);
+            _resizeShift.StartHour = Math.Clamp(_origStart + dh, minStart, maxStart);
+        }
         else
-            _resizeShift.EndHour = Math.Clamp(_origEnd + dh, _origStart + 0.5, close);
+        {
+            double minEnd = Math.Max(open + 0.5, _origStart + 0.5);
+            double maxEnd = Math.Max(minEnd, close);
+            _resizeShift.EndHour = Math.Clamp(_origEnd + dh, minEnd, maxEnd);
+        }
 
         PositionAllShifts();
     }
