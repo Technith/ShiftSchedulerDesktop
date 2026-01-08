@@ -8,8 +8,7 @@ using Models;
 using ShiftSchedulerDesktop.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
-
+using QuestPDF.Infrastructure; // Test
 namespace ShiftSchedulerDesktop.ViewModels;
 
 public class CalendarViewModel : ViewModelBase
@@ -527,4 +526,3 @@ public class ScheduleShift : INotifyPropertyChanged
     void Notify([System.Runtime.CompilerServices.CallerMemberName] string? n = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
 }
-
