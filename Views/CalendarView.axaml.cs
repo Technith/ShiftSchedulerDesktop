@@ -109,7 +109,7 @@ public partial class CalendarView : UserControl
         if (VM == null) return;
 
         var el = e.Source as Control;
-        var border = FindParent<Border>(el, b => b.DataContext is ScheduleShift);
+        var border = FindParent<Border>(el, b => b.DataContext is ScheduleShift && b.Classes.Contains("shift-block"));
 
         if (border?.DataContext is ScheduleShift shift)
         {
@@ -119,8 +119,8 @@ public partial class CalendarView : UserControl
             double rx = e.GetPosition(border).X;
             double w = border.Bounds.Width;
 
-            if (rx <= 10) { BeginResize(shift, day, true, e); e.Handled = true; }
-            else if (rx >= w - 10) { BeginResize(shift, day, false, e); e.Handled = true; }
+            if (rx <= 20) { BeginResize(shift, day, true, e); e.Handled = true; }
+            else if (rx >= w - 20) { BeginResize(shift, day, false, e); e.Handled = true; }
             else
             {
                 VM.StartShiftDrag(day, shift);

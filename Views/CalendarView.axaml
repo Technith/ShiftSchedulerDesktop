@@ -44,6 +44,22 @@
             <Setter Property="BoxShadow" Value="0 2 6 0 #60000000" />
         </Style>
 
+        <!-- Resize handle indicators -->
+        <Style Selector="Border.resize-handle">
+            <Setter Property="Width" Value="6" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Cursor" Value="SizeWestEast" />
+        </Style>
+        <Style Selector="Border.shift-block:pointerover Border.resize-handle">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Background" Value="#80FFFFFF" />
+        </Style>
+        <Style Selector="Border.resize-handle:pointerover">
+            <Setter Property="Background" Value="#B0FFFFFF" />
+        </Style>
+
         <!-- Hour column header -->
         <Style Selector="Border.hour-header">
             <Setter Property="Background" Value="#2d2d2d" />
@@ -266,24 +282,41 @@
                                                     Height="50"
                                                     Tag="{Binding}"
                                                 >
-                                                    <StackPanel
-                                                        Orientation="Vertical"
-                                                        VerticalAlignment="Center"
-                                                        Margin="8,4"
-                                                    >
-                                                        <TextBlock
-                                                            Text="{Binding EmployeeName}"
-                                                            Foreground="White"
-                                                            FontWeight="SemiBold"
-                                                            FontSize="16"
+                                                    <Grid>
+                                                        <!-- Left resize handle -->
+                                                        <Border
+                                                            Classes="resize-handle"
+                                                            HorizontalAlignment="Left"
+                                                            VerticalAlignment="Stretch"
+                                                            Margin="2,6"
                                                         />
-                                                        <TextBlock
-                                                            Text="{Binding TimeDisplay}"
-                                                            Foreground="White"
-                                                            Opacity="0.85"
-                                                            FontSize="14"
+                                                        <!-- Right resize handle -->
+                                                        <Border
+                                                            Classes="resize-handle"
+                                                            HorizontalAlignment="Right"
+                                                            VerticalAlignment="Stretch"
+                                                            Margin="2,6"
                                                         />
-                                                    </StackPanel>
+                                                        <!-- Content -->
+                                                        <StackPanel
+                                                            Orientation="Vertical"
+                                                            VerticalAlignment="Center"
+                                                            Margin="12,4"
+                                                        >
+                                                            <TextBlock
+                                                                Text="{Binding EmployeeName}"
+                                                                Foreground="White"
+                                                                FontWeight="SemiBold"
+                                                                FontSize="16"
+                                                            />
+                                                            <TextBlock
+                                                                Text="{Binding TimeDisplay}"
+                                                                Foreground="White"
+                                                                Opacity="0.85"
+                                                                FontSize="14"
+                                                            />
+                                                        </StackPanel>
+                                                    </Grid>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -407,24 +440,41 @@
                                                         Height="50"
                                                         Tag="{Binding}"
                                                     >
-                                                        <StackPanel
-                                                            Orientation="Vertical"
-                                                            VerticalAlignment="Center"
-                                                            Margin="8,4"
-                                                        >
-                                                            <TextBlock
-                                                                Text="{Binding EmployeeName}"
-                                                                Foreground="White"
-                                                                FontWeight="SemiBold"
-                                                                FontSize="16"
+                                                        <Grid>
+                                                            <!-- Left resize handle -->
+                                                            <Border
+                                                                Classes="resize-handle"
+                                                                HorizontalAlignment="Left"
+                                                                VerticalAlignment="Stretch"
+                                                                Margin="2,6"
                                                             />
-                                                            <TextBlock
-                                                                Text="{Binding TimeDisplay}"
-                                                                Foreground="White"
-                                                                Opacity="0.85"
-                                                                FontSize="14"
+                                                            <!-- Right resize handle -->
+                                                            <Border
+                                                                Classes="resize-handle"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Stretch"
+                                                                Margin="2,6"
                                                             />
-                                                        </StackPanel>
+                                                            <!-- Content -->
+                                                            <StackPanel
+                                                                Orientation="Vertical"
+                                                                VerticalAlignment="Center"
+                                                                Margin="12,4"
+                                                            >
+                                                                <TextBlock
+                                                                    Text="{Binding EmployeeName}"
+                                                                    Foreground="White"
+                                                                    FontWeight="SemiBold"
+                                                                    FontSize="16"
+                                                                />
+                                                                <TextBlock
+                                                                    Text="{Binding TimeDisplay}"
+                                                                    Foreground="White"
+                                                                    Opacity="0.85"
+                                                                    FontSize="14"
+                                                                />
+                                                            </StackPanel>
+                                                        </Grid>
                                                     </Border>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
