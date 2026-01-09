@@ -14,7 +14,6 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // Ensure new tables are created
         using (var ctx = new DatabaseContext())
         {
             ctx.Database.ExecuteSqlRaw(@"

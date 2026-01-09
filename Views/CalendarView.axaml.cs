@@ -13,7 +13,7 @@ namespace ShiftSchedulerDesktop.Views;
 
 public partial class CalendarView : UserControl
 {
-    const double SlotWidth = 70;  // Width per 30-min slot
+    const double SlotWidth = 70;
     const double ShiftH = 50;
     const double ShiftGap = 4;
     const double ShiftPad = 4;
@@ -44,7 +44,6 @@ public partial class CalendarView : UserControl
 
         double open = VM.SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
 
-        // Position shifts in both the schedule and availability calendars
         var controlNames = new[] { "DayRowsControl", "AvailabilityDayRowsControl" };
 
         foreach (var controlName in controlNames)
@@ -161,7 +160,6 @@ public partial class CalendarView : UserControl
         if (!_resizing || _resizeShift == null || VM == null) return;
 
         double dx = e.GetPosition(this).X - _resizeX0;
-        // Each slot is 30 minutes (0.5 hours)
         double dh = Math.Round(dx / SlotWidth) * 0.5;
         double open = VM.SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
         double close = VM.SelectedStore?.CloseTime?.TimeOfDay.TotalHours ?? 17;

@@ -165,7 +165,6 @@ public class StoresViewModel : ViewModelBase
         store.OpenTime = EditOpenTime.HasValue ? DateTime.Today + EditOpenTime.Value : null;
         store.CloseTime = EditCloseTime.HasValue ? DateTime.Today + EditCloseTime.Value : null;
 
-        // Adjust existing shifts to fit within new store hours
         if (store.Schedule != null && (EditOpenTime.HasValue || EditCloseTime.HasValue))
         {
             var shiftsToRemove = new List<Shift>();
@@ -175,15 +174,12 @@ public class StoresViewModel : ViewModelBase
                 var shiftStart = shift.StartTime.TimeOfDay;
                 var shiftEnd = shift.EndTime.TimeOfDay;
 
-                // Clamp start time to new open time
                 if (EditOpenTime.HasValue && shiftStart < EditOpenTime.Value)
                     shiftStart = EditOpenTime.Value;
 
-                // Clamp end time to new close time
                 if (EditCloseTime.HasValue && shiftEnd > EditCloseTime.Value)
                     shiftEnd = EditCloseTime.Value;
 
-                // If shift becomes invalid (start >= end), mark for removal
                 if (shiftStart >= shiftEnd)
                 {
                     shiftsToRemove.Add(shift);
@@ -195,7 +191,6 @@ public class StoresViewModel : ViewModelBase
                 }
             }
 
-            // Remove invalid shifts
             foreach (var shift in shiftsToRemove)
             {
                 store.Schedule.Remove(shift);
