@@ -107,7 +107,7 @@ public class CalendarViewModel : ViewModelBase
         double open = SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
         double close = SelectedStore?.CloseTime?.TimeOfDay.TotalHours ?? 17;
 
-        for (double h = open; h <= close; h += 0.5)
+        for (double h = open; h <= close; h += 0.25)
             HourSlots.Add(FormatHour(h));
 
         var shifts = LoadShiftsFromDb();
@@ -259,19 +259,21 @@ public class CalendarViewModel : ViewModelBase
         DraggedShift = null;
         DragSource = null;
         foreach (var d in Days) d.IsDragOver = false;
+        foreach (var d in AvailabilityDays) d.IsDragOver = false;
     }
 
     public void SetDragOver(ScheduleDay? day)
     {
         foreach (var d in Days) d.IsDragOver = d == day;
+        foreach (var d in AvailabilityDays) d.IsDragOver = d == day;
     }
 
     public void ResizeShift(ScheduleShift shift, double start, double end)
     {
         double open = SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
         double close = SelectedStore?.CloseTime?.TimeOfDay.TotalHours ?? 17;
-        shift.StartHour = Math.Clamp(start, open, close - 0.5);
-        shift.EndHour = Math.Clamp(end, shift.StartHour + 0.5, close);
+        shift.StartHour = Math.Clamp(start, open, close - 0.25);
+        shift.EndHour = Math.Clamp(end, shift.StartHour + 0.25, close);
     }
 
     public void DeleteShift(ScheduleDay day, ScheduleShift shift) => day.Shifts.Remove(shift);

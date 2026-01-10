@@ -13,7 +13,7 @@ namespace ShiftSchedulerDesktop.Views;
 
 public partial class CalendarView : UserControl
 {
-    const double SlotWidth = 70;
+    const double SlotWidth = 100;
     const double ShiftH = 50;
     const double ShiftGap = 4;
     const double ShiftPad = 4;
@@ -70,13 +70,13 @@ public partial class CalendarView : UserControl
                 foreach (var (pres, shift) in items)
                 {
                     int row = rowMap.GetValueOrDefault(shift, 0);
-                    // Convert hour difference to 30-min slots for positioning
-                    double left = (shift.StartHour - open) * 2 * SlotWidth;
+                    // Convert hour difference to 15-min slots for positioning
+                    double left = (shift.StartHour - open) * 4 * SlotWidth;
                     double top = ShiftPad + row * (ShiftH + ShiftGap);
 
                     Canvas.SetLeft(pres, left);
                     Canvas.SetTop(pres, top);
-                    pres.Width = Math.Max((shift.EndHour - shift.StartHour) * 2 * SlotWidth - 4, 50);
+                    pres.Width = Math.Max((shift.EndHour - shift.StartHour) * 4 * SlotWidth - 4, 50);
                 }
 
                 double h = ShiftPad + maxRow * (ShiftH + ShiftGap) + ShiftPad;
@@ -160,19 +160,19 @@ public partial class CalendarView : UserControl
         if (!_resizing || _resizeShift == null || VM == null) return;
 
         double dx = e.GetPosition(this).X - _resizeX0;
-        double dh = Math.Round(dx / SlotWidth) * 0.5;
+        double dh = Math.Round(dx / SlotWidth) * 0.25;
         double open = VM.SelectedStore?.OpenTime?.TimeOfDay.TotalHours ?? 9;
         double close = VM.SelectedStore?.CloseTime?.TimeOfDay.TotalHours ?? 17;
 
         if (_resizeLeft)
         {
             double minStart = open;
-            double maxStart = Math.Max(minStart, _origEnd - 0.5);
+            double maxStart = Math.Max(minStart, _origEnd - 0.25);
             _resizeShift.StartHour = Math.Clamp(_origStart + dh, minStart, maxStart);
         }
         else
         {
-            double minEnd = Math.Max(open + 0.5, _origStart + 0.5);
+            double minEnd = Math.Max(open + 0.25, _origStart + 0.25);
             double maxEnd = Math.Max(minEnd, close);
             _resizeShift.EndHour = Math.Clamp(_origEnd + dh, minEnd, maxEnd);
         }
@@ -251,10 +251,10 @@ public partial class CalendarView : UserControl
         }
         if (cv == null) return open;
 
-        // Each slot is 30 minutes (0.5 hours)
+        // Each slot is 15 minutes (0.25 hours)
         double slots = e.GetPosition(cv).X / SlotWidth;
-        double hour = open + Math.Floor(slots) * 0.5;
-        return Math.Clamp(hour, open, close - 0.5);
+        double hour = open + Math.Floor(slots) * 0.25;
+        return Math.Clamp(hour, open, close - 0.25);
     }
 
     ScheduleDay? FindDayContext(Control? el)

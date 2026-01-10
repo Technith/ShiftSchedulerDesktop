@@ -16,18 +16,7 @@ public partial class App : Application
     {
         using (var ctx = new DatabaseContext())
         {
-            ctx.Database.ExecuteSqlRaw(@"
-                CREATE TABLE IF NOT EXISTS AvailabilityTable (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    EmployeeId INTEGER NOT NULL,
-                    StoreId INTEGER NOT NULL,
-                    DayOfWeek INTEGER NOT NULL,
-                    StartTime TEXT,
-                    EndTime TEXT,
-                    FOREIGN KEY (EmployeeId) REFERENCES EmployeeTable(Id),
-                    FOREIGN KEY (StoreId) REFERENCES StoreTable(Id)
-                )
-            ");
+            ctx.Database.EnsureCreated();
         }
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
